@@ -21,8 +21,18 @@ def threshold(img_bw):
     mask = np.logical_and(img_bw < upper_threshold, img_bw > lower_threshold)
     
     result = img_bw.copy()
-    result[mask] = 1
+    result[mask] = 255
     result[~mask] = 0
+
+    # Run a filter to get rid of stray pixels
+    heavy = (1. / 9.) *  np.array([
+        [1, 1, 1], 
+        [1, 1, 1],
+        [1, 1, 1]
+    ])
+    result2 = ndimage.convolve(result, heavy)
+    result = (result2 - result) > 128
+
     return result
 
 # Helper function to apply a mask to 3 channels
@@ -64,6 +74,7 @@ def findExtents(img_mask):
 
     # Hack to fix pencil mark at point 0, and shadow visible along bottom
     extent_x[0] += 11
+    extent_x[1] += 4
     extent_y[0] -= 30
     extent_y[2] -= 30
                     
@@ -198,7 +209,7 @@ def cropTile(img, res = 128, debug = True):
 
 
 
-files = [ "IMG_0" + str(i) + ".JPG" for i in range(623, 669) ]
+files = [ "IMG_0" + str(i) + ".JPG" for i in range(623, 671) ]
 prefix = "raw_tiles/"
 outfix = "processed_tiles/"
 
