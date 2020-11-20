@@ -109,33 +109,43 @@ class HalfTiles:
         """
         loss = self.crownLoss(image)
         idx = np.where(loss <= thresh)
-        
+
         # Remove idx that are close together. Use the lowest loss.
-        result = []
-        for y, x in zip(idx[0], idx[1]):
-            
-            # Will we add this to our list of candidate crowns?
-            new_point = True
-            
-            # calculate distance to other found centers.
-            for i, (yr, xr, closs) in enumerate(result):
-                distance = (yr - y)*(yr - y) + (xr - x)*(xr - x)
-                if distance < 25:
-                    new_point = False                
-                    if loss[y, x] < closs:
-                        # This new point is close and has a better loss, so replace it.
-                        result[i] = (y, x, loss[y, x])
-                    
-            
-            # If new_point is still tru
-            if new_point:
-                result.append((y, x, loss[y, x]))
-        return result 
+        def helper(ys, xs):
+            clusters = []
+            for y, x in zip(ys, xs):
+                new_point = True
+                # Will we add this to our list of candidate crowns?
+                # calculate distance to other found centers.
+                for i, (yr, xr, closs) in enumerate(clusters):
+                    distance = (yr - y)*(yr - y) + (xr - x)*(xr - x)
+                    if distance < 25:
+                        new_point = False                
+                        if loss[y, x] < closs:
+                            # This new point is close and has a better loss, so replace it.
+                            clusters[i] = (y, x, loss[y, x])
+
+                # If new_point is still tru
+                if new_point:
+                    clusters.append((y, x, loss[y, x]))
+            return clusters
+    
+        clusters = helper(idx[0], idx[1])
+        
+        newys = [ c[0] for c in clusters ] 
+        newxs = [ c[1] for c in clusters ]
+        
+        return helper(newys, newxs)
 
     def predictCrowns(self, image):
         """Returns the predicted number of crowns in an image."""
         assert(image.shape[0:2] == (128, 128))
-        return len(self.findCrowns(image))
+
+        N = self.findCrowns(image)
+        E = self.findCrowns(np.rot90(image))
+        S = self.findCrowns(np.rot90(image, 2))
+        W = self.findCrowns(np.rot90(image, 3))
+        return np.max([len(N), len(E), len(S), len(W)])
 
     def tileCandidates(self, image):
         """Return list of likely half-tile candidates this image could belong too."""
