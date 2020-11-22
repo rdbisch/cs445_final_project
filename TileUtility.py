@@ -2,6 +2,7 @@ import sys
 import json
 import cv2
 import numpy as np
+from tensorflow import keras
 
 # This code is pieced together from 
 # the exploratoy work in ParseTilesScratch.ipynb
@@ -14,6 +15,7 @@ terrainToInt = {
     "swamp": 4,
     "mine": 5
 }
+
 
 class FullTiles:
     def __init__(self):
@@ -64,7 +66,11 @@ class HalfTiles:
         crown_mask = cv2.imread("processed_tiles/cropped_crown_mask.png").astype('bool').astype('uint8')[:,:,0]
         self.crown_mask = crown_mask / 1.
 
-    def predictTerrain(self, image):
+        # Load models
+        self.terrain_model = keras.models.load_model('models/terrain_model.keras')
+        self.crowns_model = keras.models.load_model('models/crowns_model.keras')
+
+    def predictTerrain_old(self, image):
         """Returns a predicted terrain type for the given 128x128 image"""
         assert(image.shape[0:2] == (128, 128))
         ccenters = np.array([[161.48790095, 141.80672983, 10.09729473],
@@ -83,6 +89,13 @@ class HalfTiles:
 #            "distance": distance,
 #            "guess": guess
 #        }
+
+    def predictTerrain(self, image):
+        image = cv2.resize(image, (24, 24))
+        image = np.expand_dims(image, axis = 0)
+        p = self.terrain_model.predict(image)[0]
+        guess = int(np.where(p == np.max(p))[0])
+        return guess
     
     def crownLoss(self, image):
         """Internal Function for predictCrowns.  Returns SSD loss of crown template against
@@ -137,7 +150,7 @@ class HalfTiles:
         
         return helper(newys, newxs)
 
-    def predictCrowns(self, image):
+    def predictCrowns_Old(self, image):
         """Returns the predicted number of crowns in an image."""
         assert(image.shape[0:2] == (128, 128))
 
@@ -147,13 +160,23 @@ class HalfTiles:
         W = self.findCrowns(np.rot90(image, 3))
         return np.max([len(N), len(E), len(S), len(W)])
 
+    def predictCrowns(self, image):
+        image = cv2.resize(image, (24, 24))
+        image = np.expand_dims(image, axis = 0)
+        p = self.crowns_model.predict(image)[0]
+        guess = int(np.where(p == np.max(p))[0])
+        return guess
+
     def tileCandidates(self, image):
         """Return list of likely half-tile candidates this image could belong too."""
         terrain = self.predictTerrain(image)
         crowns = self.predictCrowns(image)
+        return self.tileCandidates2(terrain, crowns)
+
+    def tileCandidates2(self, terrain, crowns):
         result = [ key for key, tile in self.tiles.items() \
             if tile["terraini"] == terrain and tile["crowns"] == crowns ]
-        return result
+        return result        
 
     def selfTest(self):
         """Runs ground-truth images through predictions and verifies result matches hand-labels."""
