@@ -40,23 +40,25 @@ class HalfTiles:
         # Convert full-tile representation to half-tile
         self.tiles = {}
         for key, tile in full.whole_tiles.items():
-            t = key + "_L"
+            t = (key, True)
             self.tiles[t] = {
                 "parent": key,
                 "terrain": tile["left_terrain"],
                 "terraini": terrainToInt[tile["left_terrain"]],
                 "crowns": tile["left_crowns"],
                 "image": tile["image"][:, 0:128].copy(),
-                "intensity": tile["intensity"][:, 0:128].copy()
+                "intensity": tile["intensity"][:, 0:128].copy(),
+                "family": tile["family"]
             }
-            t = key + "_R"
+            t = (key, False)
             self.tiles[t] = {
                 "parent": key,
                 "terrain": tile["right_terrain"],
                 "terraini": terrainToInt[tile["right_terrain"]],
                 "crowns": tile["right_crowns"],
                 "image": tile["image"][:, 128:].copy(),
-                "intensity": tile["intensity"][:, 128:].copy()
+                "intensity": tile["intensity"][:, 128:].copy(),
+                "family": tile["family"]
             }
         
         # Load crown template
@@ -174,9 +176,20 @@ class HalfTiles:
         return self.tileCandidates2(terrain, crowns)
 
     def tileCandidates2(self, terrain, crowns):
-        result = [ key for key, tile in self.tiles.items() \
-            if tile["terraini"] == terrain and tile["crowns"] == crowns ]
-        return result        
+        result = set([ key for key, tile in self.tiles.items() \
+            if tile["terraini"] == terrain and tile["crowns"] == crowns ])
+        return result
+
+    def tileCandidatesWithPair(self, terrainSelf, crownsSelf, neighborTerrain, neighborCrowns):
+        # find two half tiles with same parent that match on these attributes
+        left = self.tileCandidates2(terrainSelf, crownsSelf)
+        results = set([])
+        for L in left:
+            key = (L[0], not L[1])
+            p = self.tiles[key]
+            if p["terraini"] == neighborTerrain and p["crowns"] == neighborCrowns:
+                results.add(key)            
+        return results
 
     def selfTest(self):
         """Runs ground-truth images through predictions and verifies result matches hand-labels."""

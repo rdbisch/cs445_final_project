@@ -65,17 +65,46 @@ whole_tiles = {
     "48": th("desert", 0, "mine", 3)
 }
 
+terrainToInt = {
+    "desert": 0,
+    "forest": 1,
+    "ocean": 2,
+    "grass": 3,
+    "swamp": 4,
+    "mine": 5
+}
+
+
 if __name__ == "__main__":
+    tile_family = {}
+    family_idx = 0
+
     prefix = "processed_tiles/"
     for i in range(1, 49):
         filename = prefix + "cropped_tile_"
         
         key = str(i)
         if (i < 10): key = "0" + key
-        
+
+        T = whole_tiles[key]
+        L = (T["left_terrain"], T["right_terrain"], T["left_crowns"], T["right_crowns"])
+        M = (L[1], L[0], L[3], L[2])
+        if L in tile_family: family = tile_family[L]
+        elif M in tile_family:
+            print("This works")
+            family = tile_family[M]
+        else:
+            tile_family[L] = family_idx
+            family = family_idx
+            family_idx = family_idx + 1
+
         filename += key + ".png"    
         whole_tiles[key]["image_path"] = filename
+        whole_tiles[key]["family"] = family
 
     import json
     with open("processed_tiles.json", "w") as outfile:
         json.dump(whole_tiles, outfile)
+    
+    for key, value in whole_tiles.items():
+        print("{0} => {1}".format(key, value["family"]))
