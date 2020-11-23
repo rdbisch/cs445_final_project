@@ -16,6 +16,8 @@ terrainToInt = {
     "mine": 5
 }
 
+def itot(anint):
+    return ["desert", "forest", "ocean", "grass", "swamp", "mine"][anint]
 
 class FullTiles:
     def __init__(self):
