@@ -95,7 +95,9 @@ class HalfTiles:
 #        }
 
     def predictTerrain(self, image):
-        image = cv2.resize(image, (32, 32)) / 255.
+        if (np.max(image) > 1):
+            image = image / 255.       
+        image = cv2.resize(image, (32, 32))
         image = np.expand_dims(image, axis = 0)
         p = self.terrain_model.predict(image)[0]
         guess = int(np.where(p == np.max(p))[0])
@@ -165,7 +167,9 @@ class HalfTiles:
         return np.max([len(N), len(E), len(S), len(W)])
 
     def predictCrowns(self, image):
-        image = cv2.resize(image, (32, 32)) / 255.
+        if (np.max(image) > 1):
+            image = image / 255.       
+        image = cv2.resize(image, (32, 32))
         image = np.expand_dims(image, axis = 0)
         p = self.crowns_model.predict(image)[0]
         guess = int(np.where(p == np.max(p))[0])
