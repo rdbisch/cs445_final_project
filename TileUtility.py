@@ -73,9 +73,6 @@ class HalfTiles:
         # Load models
         self.terrain_model = keras.models.load_model('models/terrain_model.keras')
         self.crowns_model = keras.models.load_model('models/crowns_model.keras')
-        self.terrain_model_bw = keras.models.load_model('models/terrain_model_bw.keras')
-        self.crowns_model_bw = keras.models.load_model('models/crowns_model_bw.keras')
-
 
     def predictTerrain_old(self, image):
         """Returns a predicted terrain type for the given 128x128 image"""
@@ -106,16 +103,6 @@ class HalfTiles:
         guess = int(np.where(p == np.max(p))[0])
         return guess
     
-    
-    def predictTerrain_bw(self, image):
-        if (np.max(image) > 1):
-            image = image / 255.       
-        image = cv2.resize(image, (32, 32))
-        image = np.expand_dims(np.expand_dims(image, axis = 2), axis = 0)
-        p = self.terrain_model_bw.predict(image)[0]
-        guess = int(np.where(p == np.max(p))[0])
-        return guess
-
     def crownLoss(self, image):
         """Internal Function for predictCrowns.  Returns SSD loss of crown template against
              given image.  Taken from my MP2 code."""
@@ -187,15 +174,6 @@ class HalfTiles:
         p = self.crowns_model.predict(image)[0]
         guess = int(np.where(p == np.max(p))[0])
         return guess
-
-    def predictCrowns_bw(self, image):
-        if (np.max(image) > 1):
-            image = image / 255.       
-        image = cv2.resize(image, (32, 32))
-        image = np.expand_dims(np.expand_dims(image, axis = 2), axis = 0)
-        p = self.crowns_model_bw.predict(image)[0]
-        guess = int(np.where(p == np.max(p))[0])
-        return guess        
 
     def tileCandidates(self, image):
         """Return list of likely half-tile candidates this image could belong too."""
